@@ -1,79 +1,86 @@
-<label for="voiceSelect">Choose Voice:</label>
-<select id="voiceSelect">
-    <option value="">Loading voices...</option>
-</select>
-const speakBtn = document.getElementById('speakBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const textInput = document.getElementById('textInput');
-const voiceSelect = document.getElementById('voiceSelect');
-const historyList = document.getElementById('historyList');
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Downloader</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+        button { padding: 10px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; }
+        #downloadBtn { background: #28a745; display: none; }
+    </style>
+</head>
+<body>
 
-let mediaRecorder;
-let audioChunks = [];
-let voices = [];
-
-// 1. Populate Voice Dropdown
-function populateVoiceList() {
-    voices = window.speechSynthesis.getVoices();
-    voiceSelect.innerHTML = ''; // Clear loading text
+    <h2>TTS with Download</h2>
     
-    voices.forEach((voice, i) => {
-        const option = document.createElement('option');
-        option.textContent = `${voice.name} (${voice.lang})`;
-        option.setAttribute('data-lang', voice.lang);
-        option.setAttribute('data-name', voice.name);
-        voiceSelect.appendChild(option);
-    });
-}
-
-// Chrome/Mobile fix: Voices aren't always ready immediately
-populateVoiceList();
-if (speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = populateVoiceList;
-}
-
-window.onload = displayHistory;
-
-speakBtn.onclick = () => {
-    const text = textInput.value;
-    if (!text) return alert("Please enter text");
-
-    saveToHistory(text);
-
-    const utterance = new SpeechSynthesisUtterance(text);
+    <label>Choose Voice:</label>
+    <select id="voiceSelect"><option>Loading...</option></select>
     
-    // 2. Set the selected voice
-    const selectedVoiceName = voiceSelect.selectedOptions[0].getAttribute('data-name');
-    utterance.voice = voices.find(v => v.name === selectedVoiceName);
+    <textarea id="textInput" placeholder="Type here..."></textarea>
+    
+    <button id="speakBtn">Play & Save</button>
+    <button id="downloadBtn">Download MP3</button>
 
-    // Recording Logic
-    const ctx = new AudioContext();
-    const dest = ctx.createMediaStreamDestination();
-    const synth = window.speechSynthesis;
-    
-    mediaRecorder = new MediaRecorder(dest.stream);
-    
-    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-    mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-        const url = URL.createObjectURL(audioBlob);
-        downloadBtn.style.display = 'inline-block';
-        downloadBtn.onclick = () => {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'speech.mp3';
-            a.click();
+    <h3>History</h3>
+    <ul id="historyList"></ul>
+
+    <script>
+        const speakBtn = document.getElementById('speakBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const textInput = document.getElementById('textInput');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const historyList = document.getElementById('historyList');
+
+        let voices = [];
+        let audioChunks = [];
+
+        function populateVoices() {
+            voices = window.speechSynthesis.getVoices();
+            voiceSelect.innerHTML = voices.map(v => `<option data-name="${v.name}">${v.name} (${v.lang})</option>`).join('');
+        }
+
+        window.speechSynthesis.onvoiceschanged = populateVoices;
+        populateVoices();
+
+        speakBtn.onclick = () => {
+            const text = textInput.value;
+            if(!text) return;
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            const selectedName = voiceSelect.selectedOptions[0].getAttribute('data-name');
+            utterance.voice = voices.find(v => v.name === selectedName);
+
+            // Setup Recording
+            const ctx = new AudioContext();
+            const dest = ctx.createMediaStreamDestination();
+            const mediaRecorder = new MediaRecorder(dest.stream);
+
+            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: 'audio/mp3' });
+                const url = URL.createObjectURL(blob);
+                downloadBtn.style.display = 'inline-block';
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'speech.mp3';
+                    a.click();
+                };
+            };
+
+            audioChunks = [];
+            mediaRecorder.start();
+            window.speechSynthesis.speak(utterance);
+            
+            utterance.onend = () => {
+                mediaRecorder.stop();
+                ctx.close();
+                const li = document.createElement('li');
+                li.textContent = text.substring(0, 20) + "...";
+                historyList.appendChild(li);
+            };
         };
-    };
-
-    audioChunks = [];
-    mediaRecorder.start();
-    synth.speak(utterance);
-
-    utterance.onend = () => {
-        mediaRecorder.stop();
-        ctx.close();
-    };
-};
-
-// ... keep your existing saveToHistory and displayHistory functions here ...
+    </script>
+</body>
+</html>
