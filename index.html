@@ -1,86 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTS Downloader</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        textarea { width: 100%; height: 100px; margin: 10px 0; }
-        button { padding: 10px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; }
-        #downloadBtn { background: #28a745; display: none; }
-    </style>
+  <meta charset="UTF-8">
+  <title>NextChapter TTS</title>
 </head>
-<body>
 
-    <h2>TTS with Download</h2>
-    
-    <label>Choose Voice:</label>
-    <select id="voiceSelect"><option>Loading...</option></select>
-    
-    <textarea id="textInput" placeholder="Type here..."></textarea>
-    
-    <button id="speakBtn">Play & Save</button>
-    <button id="downloadBtn">Download MP3</button>
+<body style="background:black; color:white; text-align:center; padding:20px;">
 
-    <h3>History</h3>
-    <ul id="historyList"></ul>
+  <h1>🎧 NextChapter Library</h1>
 
-    <script>
-        const speakBtn = document.getElementById('speakBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const textInput = document.getElementById('textInput');
-        const voiceSelect = document.getElementById('voiceSelect');
-        const historyList = document.getElementById('historyList');
+  <textarea id="text" placeholder="Paste text here..." style="width:90%; height:150px;"></textarea>
 
-        let voices = [];
-        let audioChunks = [];
+  <br><br>
 
-        function populateVoices() {
-            voices = window.speechSynthesis.getVoices();
-            voiceSelect.innerHTML = voices.map(v => `<option data-name="${v.name}">${v.name} (${v.lang})</option>`).join('');
-        }
+  <button onclick="play()">▶ Play</button>
+  <button onclick="stop()">⏹ Stop</button>
 
-        window.speechSynthesis.onvoiceschanged = populateVoices;
-        populateVoices();
+  <script>
+    let speech = new SpeechSynthesisUtterance();
 
-        speakBtn.onclick = () => {
-            const text = textInput.value;
-            if(!text) return;
+    function play() {
+      speech.text = document.getElementById("text").value;
+      speechSynthesis.speak(speech);
+    }
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            const selectedName = voiceSelect.selectedOptions[0].getAttribute('data-name');
-            utterance.voice = voices.find(v => v.name === selectedName);
+    function stop() {
+      speechSynthesis.cancel();
+    }
+  </script>
 
-            // Setup Recording
-            const ctx = new AudioContext();
-            const dest = ctx.createMediaStreamDestination();
-            const mediaRecorder = new MediaRecorder(dest.stream);
-
-            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: 'audio/mp3' });
-                const url = URL.createObjectURL(blob);
-                downloadBtn.style.display = 'inline-block';
-                downloadBtn.onclick = () => {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'speech.mp3';
-                    a.click();
-                };
-            };
-
-            audioChunks = [];
-            mediaRecorder.start();
-            window.speechSynthesis.speak(utterance);
-            
-            utterance.onend = () => {
-                mediaRecorder.stop();
-                ctx.close();
-                const li = document.createElement('li');
-                li.textContent = text.substring(0, 20) + "...";
-                historyList.appendChild(li);
-            };
-        };
-    </script>
 </body>
 </html>
