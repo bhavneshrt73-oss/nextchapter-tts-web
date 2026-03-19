@@ -2,29 +2,62 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>NextChapter TTS</title>
+  <title>NextChapter TTS Pro</title>
 </head>
 
 <body style="background:black; color:white; text-align:center; padding:20px;">
 
-  <h1>🎧 NextChapter Library</h1>
+  <h1>🎧 NextChapter TTS Pro</h1>
 
-  <textarea id="text" placeholder="Paste text here..." style="width:90%; height:150px;"></textarea>
+  <textarea id="text" placeholder="Paste text here..." style="width:90%; height:120px;"></textarea>
+
+  <br><br>
+
+  <label>Choose Voice:</label>
+  <select id="voiceSelect"></select>
 
   <br><br>
 
   <button onclick="play()">▶ Play</button>
   <button onclick="stop()">⏹ Stop</button>
+  <button onclick="download()">⬇ Download</button>
 
   <script>
+    let voices = [];
+
+    function loadVoices() {
+      voices = speechSynthesis.getVoices();
+      const voiceSelect = document.getElementById("voiceSelect");
+      voiceSelect.innerHTML = "";
+
+      voices.forEach((voice, i) => {
+        let option = document.createElement("option");
+        option.value = i;
+        option.textContent = voice.name;
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    speechSynthesis.onvoiceschanged = loadVoices;
+
     function play() {
-      let speech = new SpeechSynthesisUtterance();
-      speech.text = document.getElementById("text").value;
-      speechSynthesis.speak(speech);
+      let text = document.getElementById("text").value;
+      let utterance = new SpeechSynthesisUtterance(text);
+
+      let selectedVoice = document.getElementById("voiceSelect").value;
+      if (voices[selectedVoice]) {
+        utterance.voice = voices[selectedVoice];
+      }
+
+      speechSynthesis.speak(utterance);
     }
 
     function stop() {
       speechSynthesis.cancel();
+    }
+
+    function download() {
+      alert("Download feature is limited in browsers. Use screen recorder for now.");
     }
   </script>
 
