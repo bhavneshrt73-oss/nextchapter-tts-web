@@ -17,9 +17,8 @@
   <button onclick="stop()">⏹ Stop</button>
 
   <script>
-    let speech = new SpeechSynthesisUtterance();
-
     function play() {
+      let speech = new SpeechSynthesisUtterance();
       speech.text = document.getElementById("text").value;
       speechSynthesis.speak(speech);
     }
